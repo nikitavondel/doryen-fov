@@ -5,20 +5,25 @@ const MULT1: [i32; 8] = [0, 1, -1, 0, 0, -1, 1, 0];
 const MULT2: [i32; 8] = [0, 1, 1, 0, 0, -1, -1, 0];
 const MULT3: [i32; 8] = [1, 0, 0, 1, -1, 0, 0, -1];
 
-pub struct FovRecursiveShadowCasting {}
-
-impl Default for FovRecursiveShadowCasting {
-    fn default() -> Self {
-        Self {}
-    }
+pub struct FovRecursiveShadowCasting {
+    /// width x height vector of field of view information
+    pub fov: Vec<bool>,
+    /// width of the map in cells
+    pub width: usize,
+    /// height of the map in cells
+    pub height: usize,
 }
 
 impl FovRecursiveShadowCasting {
-    pub fn new() -> Self {
-        Default::default()
+    pub fn new(width: usize, height: usize) -> Self {
+        Self {
+            width,
+            height,
+            fov: vec![false; width * height],
+        }
     }
     fn cast_light(
-        &self,
+        &mut self,
         map: &mut MapData,
         cx: i32,
         cy: i32,
@@ -58,7 +63,7 @@ impl FovRecursiveShadowCasting {
                         break;
                     }
                     if dx * dx + dy * dy <= r2 && (light_walls || map.transparent[off]) {
-                        map.fov[off] = true;
+                        self.fov[off] = true;
                     }
                     if blocked {
                         if !map.transparent[off] {
@@ -94,6 +99,19 @@ impl FovRecursiveShadowCasting {
                 break;
             }
         }
+    }
+    /// reset the fov information to false
+    pub fn clear_fov(&mut self) {
+        for off in 0..self.width * self.height {
+            self.fov[off] = false;
+        }
+    }
+    pub fn is_in_fov(&self, x: usize, y: usize) -> bool {
+        self.fov[x + y * self.width]
+    }
+    
+    pub fn set_fov(&mut self, x: usize, y: usize, in_fov: bool) {
+        self.fov[x + y * self.width] = in_fov;
     }
 }
 
@@ -132,6 +150,6 @@ impl FovAlgorithm for FovRecursiveShadowCasting {
                 light_walls,
             );
         }
-        map.fov[x + y * map.width] = true;
+        self.fov[x + y * map.width] = true;
     }
 }

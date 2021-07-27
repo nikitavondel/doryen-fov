@@ -4,23 +4,27 @@ pub struct FovRestrictive {
     start_angle: Vec<f64>,
     end_angle: Vec<f64>,
     allocated: usize,
+
+    /// width x height vector of field of view information
+    pub fov: Vec<bool>,
+    /// width of the map in cells
+    pub width: usize,
+    /// height of the map in cells
+    pub height: usize,
 }
 
 // Mingos' Restrictive Precise Angle Shadowcasting (MRPAS) v1.2
 
-impl Default for FovRestrictive {
-    fn default() -> Self {
+impl FovRestrictive {
+    pub fn new(width: usize, height: usize) -> Self {
         Self {
             start_angle: Vec::new(),
             end_angle: Vec::new(),
             allocated: 0,
+            width,
+            height,
+            fov: vec![false; width * height],
         }
-    }
-}
-
-impl FovRestrictive {
-    pub fn new() -> Self {
-        Default::default()
     }
     fn quadrant(
         &mut self,
@@ -66,8 +70,8 @@ impl FovRestrictive {
                     let off1 = (c as i32 - dy * map.width as i32) as usize;
                     let off2 = (off1 as i32 - dx) as usize;
                     if obstacles_in_last_line > 0 {
-                        if !(map.fov[off1] && map.transparent[off1]
-                            || map.fov[off2] && map.transparent[off2])
+                        if !(self.fov[off1] && map.transparent[off1]
+                            || self.fov[off2] && map.transparent[off2])
                         {
                             visible = false;
                         } else {
@@ -100,7 +104,7 @@ impl FovRestrictive {
                     }
                     if visible {
                         done = false;
-                        map.fov[c] = true;
+                        self.fov[c] = true;
                         // if the cell is opaque, block the adjacent slopes
                         if !map.transparent[c] {
                             if min_angle >= start_slope {
@@ -116,7 +120,7 @@ impl FovRestrictive {
                                 total_obstacles += 1;
                             }
                             if !light_walls {
-                                map.fov[c] = false;
+                                self.fov[c] = false;
                             }
                         }
                     }
@@ -168,8 +172,8 @@ impl FovRestrictive {
                     let off1 = (c as i32 - dx) as usize;
                     let off2 = (off1 as i32 - dy * map.width as i32) as usize;
                     if obstacles_in_last_line > 0 {
-                        if !(map.fov[off1] && map.transparent[off1]
-                            || map.fov[off2] && map.transparent[off2])
+                        if !(self.fov[off1] && map.transparent[off1]
+                            || self.fov[off2] && map.transparent[off2])
                         {
                             visible = false;
                         } else {
@@ -202,7 +206,7 @@ impl FovRestrictive {
                     }
                     if visible {
                         done = false;
-                        map.fov[c] = true;
+                        self.fov[c] = true;
                         // if the cell is opaque, block the adjacent slopes
                         if !map.transparent[c] {
                             if min_angle >= start_slope {
@@ -218,7 +222,7 @@ impl FovRestrictive {
                                 total_obstacles += 1;
                             }
                             if !light_walls {
-                                map.fov[c] = false;
+                                self.fov[c] = false;
                             }
                         }
                     }
@@ -259,7 +263,7 @@ impl FovAlgorithm for FovRestrictive {
         }
 
         // set PC's position as visible
-        map.fov[player_x + player_y * map.width] = true;
+        self.fov[player_x + player_y * map.width] = true;
 
         // compute the 4 quadrants of the map
         self.quadrant(
