@@ -107,11 +107,20 @@ impl FovRecursiveShadowCasting {
         }
     }
     pub fn is_in_fov(&self, x: usize, y: usize) -> bool {
-        self.fov[x + y * self.width]
+        let i = x + y * self.width;
+        if i >= self.fov.len() {
+            false
+        } else {
+            self.fov[i]
+        }
     }
     
     pub fn set_fov(&mut self, x: usize, y: usize, in_fov: bool) {
-        self.fov[x + y * self.width] = in_fov;
+        let mut i = x + y * self.width;
+        
+        i = i.clamp(0, self.fov.len());
+        
+        self.fov[i] = in_fov;
     }
 }
 
